@@ -3,3 +3,10 @@ node_modules
 .tern-project
 server/static
 static
+.env
+.npm
+package-lock.json
+yarn.lock
+*dist/
+*build/
+*lib/
