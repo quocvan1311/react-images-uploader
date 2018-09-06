@@ -14,13 +14,11 @@ export default class ImagesUploader extends Component {
 	state: {
 		imagePreviewUrls: Array<string>;
 		loadState: string;
-		optimisticPreviews: Array<string>;
 		displayNotification: boolean;
 	};
 	input: ?HTMLInputElement;
 
 	static propTypes = {
-		url: PropTypes.string.isRequired,
 		dataName: PropTypes.string,
 		headers: PropTypes.object,
 		classNamespace: PropTypes.string,
@@ -32,7 +30,6 @@ export default class ImagesUploader extends Component {
 		onLoadEnd: PropTypes.func,
 		deleteImage: PropTypes.func,
 		clickImage: PropTypes.func,
-		optimisticPreviews: PropTypes.bool,
 		image: PropTypes.string,
 		notification: PropTypes.string,
 		max: PropTypes.number,
@@ -103,7 +100,6 @@ export default class ImagesUploader extends Component {
 		this.state = {
 			imagePreviewUrls,
 			loadState: '',
-			optimisticPreviews: [],
 			displayNotification: false,
 		};
 		this.input = null;
@@ -159,7 +155,7 @@ export default class ImagesUploader extends Component {
 	}
 
 	@autobind
-	buildPreviews(urls: Array<string>, optimisticUrls?: Array<string>, inButton?: boolean) {
+	buildPreviews(urls: Array<string>) {
 		const {
 			classNamespace,
 			disabled,
@@ -175,7 +171,7 @@ export default class ImagesUploader extends Component {
 			plusElement,
 		} = this.props;
 
-		if ((!urls || urls.length < 1) && (!optimisticUrls || optimisticUrls.length < 1)) {
+		if (!urls || urls.length < 1) {
 			return (
 				<div
 					className={classNames.emptyPreview || `${classNamespace}emptyPreview`}
@@ -221,7 +217,7 @@ export default class ImagesUploader extends Component {
 					            e.preventDefault();
 					            this.clickImage(key, url)
 					        }}>
-							{!inButton ? <div
+							{<div
 								className={classNames.deletePreview || `${classNamespace}deletePreview`}
 								style={deletePreviewStyle}
 								onClick={(e) => {
@@ -244,24 +240,6 @@ export default class ImagesUploader extends Component {
 										transform="translate(-557 -602)"
 										/>
 								</svg>)}
-							</div> : <div
-								className={classNames.notification || `${classNamespace}notification`}
-								style={styles.notification ? {
-									...styles.notification,
-									...{
-										display: this.state.displayNotification ? 'block' : 'none',
-										backgroundColor: notificationBgColor,
-										color: notificationColor,
-									},
-								} : {
-									display: this.state.displayNotification ? 'block' : 'none',
-									backgroundColor: notificationBgColor,
-									color: notificationColor,
-								}}>
-								<span>
-									{this.props.notification
-										|| this.buildPlus(disabled, notificationColor, disabledColor, plusElement)}
-								</span>
 							</div>}
 						</div>
 					);
@@ -269,108 +247,7 @@ export default class ImagesUploader extends Component {
 				return null;
 			});
 		}
-		if (optimisticUrls && optimisticUrls.length > 0) {
-			const length = previews.length;
-			previews = previews.concat(optimisticUrls.map((url, key) => {
-				if (url) {
-					let imgPreviewStyle = {
-						backgroundImage: `url(${url})`,
-						borderColor: disabled ? disabledBorderColor : borderColor,
-					};
-
-					if (this.props.size) {
-						imgPreviewStyle = {
-							...imgPreviewStyle,
-							...{
-								width: this.props.size,
-								height: this.props.size,
-							},
-							...(styles.imgPreview || {}),
-						};
-					}
-
-					return (
-						<div
-							className={classNames.imgPreview || `${classNamespace}imgPreview`}
-							key={length + key}
-							style={imgPreviewStyle}
-							/>
-					);
-				}
-				return null;
-			}));
-		}
 		return previews;
-	}
-
-	@autobind
-	async loadImages(files: FileList, url: string, onLoadEnd?: Function): any {
-		if (url) {
-			try {
-				const imageFormData = new FormData();
-
-				for (let i = 0; i < files.length; i++) {
-					imageFormData.append(this.props.dataName, files[i], files[i].name);
-				}
-
-				let response = await fetch(url, {
-					method: 'POST',
-					credentials: 'include',
-					body: imageFormData,
-					headers: this.props.headers
-				});
-
-				if (response && response.status && response.status === 200) {
-					response = await response.json();
-					if (response instanceof Array || typeof response === 'string') {
-						let imagePreviewUrls = [];
-						imagePreviewUrls = this.state.imagePreviewUrls.concat(response);
-						this.setState({
-							imagePreviewUrls,
-							optimisticPreviews: [],
-							loadState: 'success',
-						});
-						if (onLoadEnd && typeof onLoadEnd === 'function') {
-							onLoadEnd(false, response);
-						}
-					} else {
-						const err = {
-							message: 'invalid response type',
-							response,
-							fileName: 'ImagesUploader',
-						};
-						this.setState({
-							loadState: 'error',
-							optimisticPreviews: [],
-						});
-						if (onLoadEnd && typeof onLoadEnd === 'function') {
-							onLoadEnd(err);
-						}
-					}
-				} else {
-					const err = {
-						message: 'server error',
-						status: response ? response.status : false,
-						fileName: 'ImagesUploader',
-					};
-					this.setState({
-						loadState: 'error',
-						optimisticPreviews: [],
-					});
-					if (onLoadEnd && typeof onLoadEnd === 'function') {
-						onLoadEnd(err);
-					}
-				}
-			} catch (err) {
-				if (onLoadEnd && typeof onLoadEnd === 'function') {
-					onLoadEnd(err);
-				}
-				this.setState({
-					loadState: 'error',
-					optimisticPreviews: [],
-				});
-			}
-		}
 	}
 
 	@autobind
@@ -378,7 +255,7 @@ export default class ImagesUploader extends Component {
 		e.preventDefault();
 
 		const filesList = e.target.files;
-		const { onLoadStart, onLoadEnd, url, optimisticPreviews } = this.props;
+		const { onLoadStart, onLoadEnd } = this.props;
 
 		if (onLoadStart && typeof onLoadStart === 'function') {
 			onLoadStart();
@@ -396,27 +273,30 @@ export default class ImagesUploader extends Component {
 			};
 			this.setState({
 				loadState: 'error',
-				optimisticPreviews: [],
 			});
 			if (onLoadEnd && typeof onLoadEnd === 'function') {
 				onLoadEnd(err);
 			}
 			return;
-		}
-
+    }
+    
+    let imagePreviewUrls = this.state.imagePreviewUrls;
+    let count = 0;
 		for (let i = 0; i < filesList.length; i++) {
-			const file = filesList[i];
-
-			if (optimisticPreviews) {
-				const reader = new FileReader();
-				reader.onload = (upload) => {
-					const prevOptimisticPreviews = this.state.optimisticPreviews;
+      const file = filesList[i];
+      
+			const reader = new FileReader();
+      reader.onload = (upload) => {
+        count++;
+        imagePreviewUrls = imagePreviewUrls.concat(upload.target.result);
+        if (count === filesList.length) {
           this.setState({
-            optimisticPreviews: prevOptimisticPreviews.concat(upload.target.result),
+            imagePreviewUrls,
+            loadState: 'success',
           });
-				};
-				reader.readAsDataURL(file);
-			}
+        }
+      };
+      reader.readAsDataURL(file);
 
 			if (!file.type.match('image.*')) {
 				const err = {
@@ -432,10 +312,6 @@ export default class ImagesUploader extends Component {
 				});
 				return;
 			}
-		}
-
-		if (url) {
-			this.loadImages(filesList, url, onLoadEnd);
 		}
 	}
 
@@ -511,7 +387,7 @@ export default class ImagesUploader extends Component {
 	}
 
 	render() {
-		const { imagePreviewUrls, loadState, optimisticPreviews } = this.state;
+		const { imagePreviewUrls, loadState } = this.state;
 		const {
 			inputId,
 			disabled,
@@ -624,9 +500,7 @@ export default class ImagesUploader extends Component {
 						onChange={this.handleImageChange}
 						/>
 				</div>
-				{this.buildPreviews(
-						imagePreviewUrls,
-						this.props.optimisticPreviews && optimisticPreviews)}
+				{this.buildPreviews(imagePreviewUrls)}
 			</div>
 		);
 	}

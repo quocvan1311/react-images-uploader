@@ -9,13 +9,6 @@ export default class App extends Component {
 		return (
 			<div>
 				<ImagesUploader
-					url="http://localhost:9090/multiple"
-					optimisticPreviews
-					onLoadEnd={(err) => {
-						if (err) {
-							console.error(err);
-						}
-					}}
 					label="Upload multiple images"
 					/>
 			</div>
