@@ -18,22 +18,6 @@ export default class App extends Component {
 					}}
 					label="Upload multiple images"
 					/>
-				<ImagesUploader
-					url="http://localhost:9090/notmultiple"
-					optimisticPreviews
-					multiple={false}
-					onLoadEnd={(err) => {
-						if (err) {
-							console.error(err);
-						}
-					}}
-					styles={{
-						container: {
-							paddingTop: 15,
-						},
-					}}
-					label="Upload a picture"
-					/>
 			</div>
 		);
 	}

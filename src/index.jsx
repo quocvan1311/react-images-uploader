@@ -33,7 +33,6 @@ export default class ImagesUploader extends Component {
 		deleteImage: PropTypes.func,
 		clickImage: PropTypes.func,
 		optimisticPreviews: PropTypes.bool,
-		multiple: PropTypes.bool,
 		image: PropTypes.string,
 		notification: PropTypes.string,
 		max: PropTypes.number,
@@ -86,7 +85,6 @@ export default class ImagesUploader extends Component {
 		headers:{},
 		classNames: {},
 		styles: {},
-		multiple: true,
 		color: '#142434',
 		disabledColor: '#bec3c7',
 		borderColor: '#a9bac8',
@@ -99,11 +97,8 @@ export default class ImagesUploader extends Component {
 	constructor(props: Object) {
 		super(props);
 		let imagePreviewUrls = [];
-		if (this.props.images && this.props.multiple !== false) {
+		if (this.props.images) {
 			imagePreviewUrls = this.props.images || [];
-		}
-		if (this.props.image && this.props.multiple === false) {
-			imagePreviewUrls = [this.props.image];
 		}
 		this.state = {
 			imagePreviewUrls,
@@ -132,14 +127,9 @@ export default class ImagesUploader extends Component {
 	}
 
 	componentWillReceiveProps(nextProps: Object) {
-		if (!this.props.images && nextProps.images && nextProps.multiple !== false) {
+		if (!this.props.images && nextProps.images) {
 			this.setState({
 				imagePreviewUrls: nextProps.images,
-			});
-		}
-		if (!this.props.image && nextProps.image && nextProps.multiple === false) {
-			this.setState({
-				imagePreviewUrls: [nextProps.image],
 			});
 		}
 	}
@@ -194,10 +184,8 @@ export default class ImagesUploader extends Component {
 			);
 		}
 		let previews = [];
-		const multiple = this.props.multiple;
 		if (urls
-			&& urls.length > 0
-			&& (!(multiple === false && optimisticUrls && optimisticUrls.length > 0))) {
+			&& urls.length > 0) {
 			previews = urls.map((url, key) => {
 				if (url) {
 					let imgPreviewStyle = {
@@ -334,14 +322,9 @@ export default class ImagesUploader extends Component {
 
 				if (response && response.status && response.status === 200) {
 					response = await response.json();
-					const multiple = this.props.multiple;
 					if (response instanceof Array || typeof response === 'string') {
 						let imagePreviewUrls = [];
-						if (multiple === false) {
-							imagePreviewUrls = response instanceof Array ? response : [response];
-						} else {
-							imagePreviewUrls = this.state.imagePreviewUrls.concat(response);
-						}
+						imagePreviewUrls = this.state.imagePreviewUrls.concat(response);
 						this.setState({
 							imagePreviewUrls,
 							optimisticPreviews: [],
@@ -395,7 +378,7 @@ export default class ImagesUploader extends Component {
 		e.preventDefault();
 
 		const filesList = e.target.files;
-		const { onLoadStart, onLoadEnd, url, optimisticPreviews, multiple } = this.props;
+		const { onLoadStart, onLoadEnd, url, optimisticPreviews } = this.props;
 
 		if (onLoadStart && typeof onLoadStart === 'function') {
 			onLoadStart();
@@ -427,16 +410,10 @@ export default class ImagesUploader extends Component {
 			if (optimisticPreviews) {
 				const reader = new FileReader();
 				reader.onload = (upload) => {
-					if (multiple === false) {
-						this.setState({
-							optimisticPreviews: [upload.target.result],
-						});
-					} else {
-						const prevOptimisticPreviews = this.state.optimisticPreviews;
-						this.setState({
-							optimisticPreviews: prevOptimisticPreviews.concat(upload.target.result),
-						});
-					}
+					const prevOptimisticPreviews = this.state.optimisticPreviews;
+          this.setState({
+            optimisticPreviews: prevOptimisticPreviews.concat(upload.target.result),
+          });
 				};
 				reader.readAsDataURL(file);
 			}
@@ -508,7 +485,6 @@ export default class ImagesUploader extends Component {
 	@autobind
 	buildButtonContent() {
 		const {
-			multiple,
 			classNamespace,
 			disabled,
 			classNames,
@@ -525,103 +501,13 @@ export default class ImagesUploader extends Component {
 			...(styles.pseudobuttonContent),
 		};
 
-		if (multiple !== false) {
-			return (
-				<span
-					className={classNames.pseudobuttonContent || `${classNamespace}pseudobuttonContent`}
-					style={pseudobuttonContentStyle}>
-					{this.buildPlus(disabled, color, disabledColor, plusElement)}
-				</span>
-			);
-		}
-		const { imagePreviewUrls, optimisticPreviews } = this.state;
-		if ((!imagePreviewUrls || imagePreviewUrls.length < 1)
-		&& (!optimisticPreviews || optimisticPreviews.length < 1)) {
-			return (
-				<span
-					className={classNames.pseudobuttonContent || `${classNamespace}pseudobuttonContent`}
-					style={pseudobuttonContentStyle}>
-					{this.buildPlus(disabled, color, disabledColor, plusElement)}
-				</span>
-			);
-		}
-		return this.buildPreviews(imagePreviewUrls, optimisticPreviews, true);
-	}
-
-	@autobind
-	buildClose() {
-		const {
-			multiple,
-			classNamespace,
-			disabled,
-			classNames,
-			styles,
-			color,
-			disabledColor,
-			borderColor,
-			disabledBorderColor,
-			deleteElement,
-		} = this.props;
-
-		if (multiple !== false) {
-			return null;
-		}
-		const { imagePreviewUrls } = this.state;
-		if (!imagePreviewUrls || imagePreviewUrls.length < 1) {
-			return null;
-		}
-
-		const deletePreviewStyle = {
-			...{
-				color: disabled ? disabledColor : color,
-				borderColor: disabled ? disabledBorderColor : borderColor,
-			},
-			...(styles.deletePreview || {}),
-		};
-
-		return (<div
-			className={classNames.deletePreview || `${classNamespace}deletePreview`}
-			style={deletePreviewStyle}
-			onClick={(e) => {
-				e.preventDefault();
-				this.deleteImage(0);
-			}}>
-			{deleteElement || (<svg xmlns="http://www.w3.org/2000/svg" width="7.969" height="8" viewBox="0 0 7.969 8">
-				<path
-					id="X_Icon"
-					data-name="X Icon"
-					style={{
-						fill: disabled ? disabledColor : color,
-						fillRrule: 'evenodd',
-					}}
-					/* eslint-disable max-len */
-					d="M562.036,606l2.849-2.863a0.247,0.247,0,0,0,0-.352l-0.7-.706a0.246,0.246,0,0,0-.352,0l-2.849,2.862-2.849-2.862a0.247,0.247,0,0,0-.352,0l-0.7.706a0.249,0.249,0,0,0,0,.352L559.927,606l-2.849,2.862a0.25,0.25,0,0,0,0,.353l0.7,0.706a0.249,0.249,0,0,0,.352,0l2.849-2.862,2.849,2.862a0.249,0.249,0,0,0,.352,0l0.7-.706a0.25,0.25,0,0,0,0-.353Z"
-					/* eslint-enable max-len */
-					transform="translate(-557 -602)"
-					/>
-			</svg>)}
-		</div>);
-	}
-
-	@autobind
-	showNotification() {
-		const { multiple, disabled } = this.props;
-		const { imagePreviewUrls } = this.state;
-		if (!disabled && multiple === false && imagePreviewUrls && imagePreviewUrls.length > 0) {
-			this.setState({
-				displayNotification: true,
-			});
-		}
-	}
-
-	@autobind
-	hideNotification() {
-		const { multiple } = this.props;
-		if (multiple === false) {
-			this.setState({
-				displayNotification: false,
-			});
-		}
+		return (
+      <span
+        className={classNames.pseudobuttonContent || `${classNamespace}pseudobuttonContent`}
+        style={pseudobuttonContentStyle}>
+        {this.buildPlus(disabled, color, disabledColor, plusElement)}
+      </span>
+    );
 	}
 
 	render() {
@@ -629,7 +515,6 @@ export default class ImagesUploader extends Component {
 		const {
 			inputId,
 			disabled,
-			multiple,
 			label,
 			size,
 			classNamespace,
@@ -696,18 +581,13 @@ export default class ImagesUploader extends Component {
 					<div
 						className={classNames.loadContainer || `${classNamespace}loadContainer`}
 						style={loadContainerStyle}>
-						{this.buildClose()}
 						<Dropzone
 							onDrop={this.handleFileDrop}
 							disableClick
 							accept="image/*"
 							className={classNames.dropzone || `${classNamespace}dropzone`}
 							style={dropzoneStyle}
-							multiple={
-								/* eslint-disable no-unneeded-ternary */
-								multiple === false ? false : true
-								/* eslint-enable no-unneeded-ternary */
-							}>
+							multiple={true}>
 							<Button
 								state={loadState}
 								type="button"
@@ -719,11 +599,7 @@ export default class ImagesUploader extends Component {
 									if (this.input) {
 										this.input.click();
 									}
-								}}
-								onMouseOver={this.showNotification}
-								onMouseLeave={this.hideNotification}
-								onDragOver={this.showNotification}
-								onDragLeave={this.hideNotification}>
+								}}>
 								{this.buildButtonContent()}
 							</Button>
 						</Dropzone>
@@ -743,16 +619,14 @@ export default class ImagesUploader extends Component {
 						}}
 						type="file"
 						accept="image/*"
-						multiple={multiple === false ? false : 'multiple'}
+						multiple="multiple"
 						disabled={disabled || loadState === 'loading'}
 						onChange={this.handleImageChange}
 						/>
 				</div>
-				{multiple !== false
-					? this.buildPreviews(
+				{this.buildPreviews(
 						imagePreviewUrls,
-						this.props.optimisticPreviews && optimisticPreviews)
-					: null}
+						this.props.optimisticPreviews && optimisticPreviews)}
 			</div>
 		);
 	}
