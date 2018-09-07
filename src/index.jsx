@@ -1,7 +1,6 @@
 /* @flow */
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
-import fetch from 'isomorphic-fetch';
 import autobind from 'autobind-decorator';
 import classnames from 'classnames';
 import Dropzone from 'react-dropzone';
@@ -165,10 +164,7 @@ export default class ImagesUploader extends Component {
 			disabledColor,
 			borderColor,
 			disabledBorderColor,
-			notificationBgColor,
-			notificationColor,
 			deleteElement,
-			plusElement,
 		} = this.props;
 
 		if (!urls || urls.length < 1) {
@@ -282,23 +278,11 @@ export default class ImagesUploader extends Component {
     
     let imagePreviewUrls = this.state.imagePreviewUrls;
     let count = 0;
+    let result = [];
 		for (let i = 0; i < filesList.length; i++) {
       const file = filesList[i];
-      
-			const reader = new FileReader();
-      reader.onload = (upload) => {
-        count++;
-        imagePreviewUrls = imagePreviewUrls.concat(upload.target.result);
-        if (count === filesList.length) {
-          this.setState({
-            imagePreviewUrls,
-            loadState: 'success',
-          });
-        }
-      };
-      reader.readAsDataURL(file);
-
-			if (!file.type.match('image.*')) {
+      if (!file.type.match('image.*')) {
+        alert('File type error')
 				const err = {
 					message: 'file type error',
 					type: file.type,
@@ -312,6 +296,23 @@ export default class ImagesUploader extends Component {
 				});
 				return;
 			}
+      
+			const reader = new FileReader();
+      reader.onload = (upload) => {
+        count++;
+        imagePreviewUrls = imagePreviewUrls.concat(upload.target.result);
+        result[i] = upload.target;
+        if (count === filesList.length) {
+          this.setState({
+            imagePreviewUrls,
+            loadState: 'success',
+          });
+          if (onLoadEnd && typeof onLoadEnd === 'function') {
+            onLoadEnd(false, result);
+          }
+        }
+      };
+      reader.readAsDataURL(file);
 		}
 	}
 
@@ -447,8 +448,7 @@ export default class ImagesUploader extends Component {
 			<div className={containerClassNames} style={styles.container || {}}>
 				<label
 					className={classNames.label || `${classNamespace}label`}
-					style={labelStyle}
-					htmlFor={inputId || 'filesInput'}>
+					style={labelStyle}>
 					{label || null}
 				</label>
 				<div

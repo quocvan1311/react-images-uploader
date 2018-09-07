@@ -9,7 +9,10 @@ export default class App extends Component {
 		return (
 			<div>
 				<ImagesUploader
-					label="Upload multiple images"
+          label="Upload multiple images"
+          onLoadEnd={(err, res) => {
+            console.log(res);
+          }}
 					/>
 			</div>
 		);
